@@ -5,12 +5,12 @@ on Play
     const global float NUMB_LEGS = 4
     const global float TOTAL_POINTS = POINTS_PER_LEG * NUMB_LEGS
 
-    const global float BODY_HEIGHT = 1.8
+    const global float BODY_HEIGHT = 1.6
 
     // dist when not moving
-    const global float RELOCATE_LIMB_DIST_BASE = .2
+    const global float RELOCATE_LIMB_DIST_BASE = .3
     // dist when moving at max speed + RELOCATE_LIMB_DIST_BASE
-    const global float RELOCATE_LIMB_DIST = 1
+    const global float RELOCATE_LIMB_DIST = .7
 
     const global float MOVE_SPEED = 0.075
 
@@ -22,12 +22,12 @@ on Play
     const global float CAN_MOVE_AFTER = 15
     const global float CAN_MOVE_AFTER_ADJACENT = 10 // !!! MUST BE SMALLER THAN CAN_MOVE_AFTER !!!
 
-    object segmentPrefab = null // rod on the z axis, without collision
-    global object body = null // any 1x1x1 block
+    obj segmentPrefab = null // rod on the z axis, without collision
+    global obj body = null // any 1x1x1 block
     
     global vec3 bodyPos = vec3(0, BODY_HEIGHT, 0)
 
-    const float legOff = 0.35
+    const float legOff = 0.32
     global array<vec3> legOffs =
     [
         vec3(legOff, 0, legOff),
@@ -42,7 +42,7 @@ on Play
         normalize(vec3(-1, 0, -1)),
         normalize(vec3(-1, 0,  1))
     ]
-    global array<object> legSegments
+    global array<obj> legSegments
     global array<float> legMoveStart
     global array<float> lengths
     global array<vec3> points
@@ -62,7 +62,7 @@ on Play
         {
             inline float i = sOff + _i
 
-            segmentPrefab.clone(out inline object segment)
+            segmentPrefab.clone(out inline obj segment)
             legSegments.set(i, segment)
             lengths.set(_i + pOff, 1)
         }
@@ -82,7 +82,7 @@ updateLegs()
 // body y pos
 float bodyY = 0
 
-on Loop(null, NUMB_LEGS, out i)
+on Loop(null, NUMB_LEGS, out inline float i)
 {
     bodyY += legCastHits.get(i).y
 }
@@ -99,7 +99,7 @@ func updateLegs()
 
     on Loop(0, NUMB_LEGS, out inline float i)
     {
-        vec3 rayPos = bodyPos + legDirs.get(i) * 2.2
+        vec3 rayPos = bodyPos + legDirs.get(i) * 1.5
         raycast(rayPos + vec3(0, 2, 0), rayPos - vec3(0, 10, 0), out _, out vec3 hitPos, out _)
 
         legCastHits.set(i, hitPos)
@@ -125,7 +125,7 @@ func updateLegs()
     if (currentFrame == 0)
     {
         // set points to targetPoints
-        on Loop(null, TOTAL_POINTS, out i)
+        on Loop(null, TOTAL_POINTS, out inline float i)
         {
             points.set(i, targetPoints.get(i))
         }
@@ -133,7 +133,7 @@ func updateLegs()
     else
     {
         // interpolate points to targetPoints
-        on Loop(null, TOTAL_POINTS, out i)
+        on Loop(null, TOTAL_POINTS, out inline float i)
         {
             points.set(i, targetPoints.get(i) * LIMB_INTERPOLATION_SPEED + points.get(i) * LIMB_INTERPOLATION_SPEED_INV)
         }
@@ -147,7 +147,7 @@ func updateLegs()
 
         on Loop(null, SEGMENTS_PER_LEG, out inline float _i)
         {
-            i = _i + pOff
+            inline float i = _i + pOff
             inline float nextI = i + 1
 
             inline vec3 point = points.get(i)
@@ -182,9 +182,9 @@ func fabric(float limb, vec3 target)
         targetPoints.set(off + SEGMENTS_PER_LEG, target)
 
         // loop backwards
-        on Loop(POINTS_PER_LEG - 2, -1, out _i)
+        on Loop(POINTS_PER_LEG - 2, -1, out inline float _i)
         {
-            i = _i + off
+            inline float i = _i + off
             inline float nextIndex = i + 1
 
             inline vec3 point = targetPoints.get(i)
@@ -199,22 +199,22 @@ func fabric(float limb, vec3 target)
         targetPoints.set(off, bodyPos + legOffs.get(limb))
 
         // loop forwards
-        on Loop(0, SEGMENTS_PER_LEG, out _i)
+        on Loop(0, SEGMENTS_PER_LEG, out inline float _i)
         {  
-            i = _i + off
-            nextIndex = i + 1
+            inline float i = _i + off
+            inline float nextIndex = i + 1
 
-            point = targetPoints.get(i)
-            nextPoint = targetPoints.get(nextIndex)
+            inline vec3 point = targetPoints.get(i)
+            inline vec3 nextPoint = targetPoints.get(nextIndex)
 
-            move = normalize(nextPoint - point) * lengths.get(i)
+            inline vec3 move = normalize(nextPoint - point) * lengths.get(i)
 
             targetPoints.set(nextIndex, point + move)
         }
     }
 }
 
-func checkCanMove(float leg, out bool canMove)
+inline func checkCanMove(float leg, out bool canMove)
 {
     inline float currentFrame = getCurrentFrame()
     inline float canMoveTime = currentFrame - CAN_MOVE_AFTER_ADJACENT
